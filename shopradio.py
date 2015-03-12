@@ -50,20 +50,23 @@ class Spotify(object):
             'redirect_uri': 'http://%s/spotify_auth'% self.host, 
             'grant_type': 'authorization_code'}
         response = self.spotify.get_raw_access_token(data=data)
+        print response
         self.tokens =  json.loads(response.content)
         print self.tokens['refresh_token']
         self.session = self._create_session()
-        #self.refresh_token()
+        self.refresh_token()
         #self.session = self.spotify.get_auth_session(data=data, decoder=json.loads)
         #print self.session.expires_in
 
     def refresh_token(self):
-        data = {
-            'refresh_token ': self.tokens['refresh_token'], 
-            'grant_type': 'refresh_token'}
-        response = self.spotify.get_raw_access_token(data=data)
-        self.tokens =  json.loads(response.content)
-        print self.tokens
+        data = {'client_id':self.client_id,
+            'client_secret': self.client_secret,
+            'grant_type': 'refresh_token',
+            'refresh_token': self.tokens['refresh_token']}
+
+        response = self.spotify.get_access_token(data=data, decoder=json.loads)
+        print response
+        self.tokens['access_token'] =  response
         self.session = self._create_session()
         
 
