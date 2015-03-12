@@ -2,31 +2,32 @@
 <head>
     <title>Shop Radio</title>
 </head>
-<body>
-<p><h3><a href="/">Shop Radio</a></h3></p>
-<h3>Artists</h3><ul>
+
+% include('header.tpl')
+<table align="center" border=1>
+<tr><td colspan="2"><h3 align="center">Artists</h3><ul align="center"></td></tr>
 	%for album in res['artists']:
 	%try:
     %img = album['img']
     %except:
     %img = ' '
     %end
-    <li><img src="{{img}}" height="64" width="64"> <a href="/albums?id={{album['id']}}">{{album['name']}}</a></li>
+    <tr><td><img src="{{img}}" height="64" width="64"></td><td> <a href="/albums?id={{album['id']}}">{{album['name']}}</a></td></tr>
     %end
-</ul>     
-<h3>Albums</h3><ul>
+     
+<tr><td colspan="2"><h3 align="center">Albums</h3><ul align="center"></td></tr>
 	%for album in res['albums']:
     %try:
     %img = album['img']
     %except:
     %img = ' '
     %end
-    <li><img src="{{img}}" height="64" width="64"> <a href="/tracks?id={{album['id']}}">{{album['name']}}</a></li>
+    <tr><td><img src="{{img}}" height="64" width="64"></td><td> <a href="/tracks?id={{album['id']}}">{{album['name']}}</a></td></tr>
     %end
-</ul>
-<h3>Tracks</h3><ul>
+
+<tr><td colspan="2"><h3 align="center">Tracks</h3><ul align="center"></td></tr>
 	%for album in res['tracks']:
-    <li>{{album['artist']}} - <a href="/add?id={{album['id']}}">{{album['name']}}</a></li>
+    <tr><td>{{album['artist']}}</td><td><a href="/add?id={{album['id']}}">{{album['name']}}</a></td></tr>
     %end
-</ul>
+</table>
   </body>      

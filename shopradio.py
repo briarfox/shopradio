@@ -4,26 +4,28 @@ import webbrowser
 import json
 import os,sys
 import requests
+import datetime
+import threading
 from ConfigParser import SafeConfigParser
 from rauth import OAuth2Service, OAuth2Session
 import pprint
 
-#HOST='shopradio.houserbrosco.com'
+
 class Spotify(object):
     def __init__(self):
 
         parser = SafeConfigParser()
         if not os.path.isfile('settings.conf'):
             with open('settings.conf','w') as f:
-                f.write('[settings]\nhost_url = \nuser_id = \nplaylist = \nclient_id = \nclient_secret = \n')
+                f.write('[settings]\nhost_url = \nuser_id = \nclient_id = \nclient_secret = \n')
             print 'Please update settings.conf'
             sys.exit(0)
         parser.read('settings.conf')
 
         self.host = parser.get('settings','host_url')
+        self.recent = [{'artist': '','album': '','song': ''}]
         self.uri = 'http://%s/spotify_auth' % self.host
         self.user = parser.get('settings','user_id')
-        self.playlist = parser.get('settings','playlist')
         self.client_id=parser.get('settings','client_id')
         self.client_secret=parser.get('settings','client_secret')
         self.spotify = OAuth2Service(
@@ -54,20 +56,26 @@ class Spotify(object):
         self.tokens =  json.loads(response.content)
         print self.tokens['refresh_token']
         self.session = self._create_session()
-        self.refresh_token()
+        self.refresh_time = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens['expires_in']))
+        t1 = threading.Thread(target=self.refresh_token)
+        t1.start()
         #self.session = self.spotify.get_auth_session(data=data, decoder=json.loads)
         #print self.session.expires_in
 
     def refresh_token(self):
-        data = {'client_id':self.client_id,
-            'client_secret': self.client_secret,
-            'grant_type': 'refresh_token',
-            'refresh_token': self.tokens['refresh_token']}
+        print 'Refresh Loop'
+        while True:
+            if datetime.datetime.now() >= self.refresh_time:
+                print 'REFRESHED TOKEN'
+                self.refresh_time = datetime.datetime.now() + datetime.timedelta(seconds=int(self.tokens['expires_in']))
+                data = {'client_id':self.client_id,
+                    'client_secret': self.client_secret,
+                    'grant_type': 'refresh_token',
+                    'refresh_token': self.tokens['refresh_token']}
 
-        response = self.spotify.get_access_token(data=data, decoder=json.loads)
-        print response
-        self.tokens['access_token'] =  response
-        self.session = self._create_session()
+                response = self.spotify.get_access_token(data=data, decoder=json.loads)
+                self.tokens['access_token'] =  response
+                self.session = self._create_session()
         
 
     def add_song(self,ids):
@@ -135,6 +143,19 @@ class Spotify(object):
         res = self.session.get('https://api.spotify.com/v1/artists/{id}/albums'.format(id=id))
         return self._parse_artist(res.json())
 
+    def get_recent_track(self,id):
+        res = self.session.get('https://api.spotify.com/v1/tracks/{id}'.format(id=id))
+        res_dict =  res.json()
+        self.recent.append({'artist': res_dict['artists'][0]['name'],'album': res_dict['album']['name'],'song': res_dict['name']})
+        if len(self.recent) > 10:
+            self.recent = self.recent[-10:]
+
+    def list_playlists(self):
+        res = self.session.get('https://api.spotify.com/v1/users/{user_id}/playlists'.format(user_id=self.user))
+        output = []
+        for playlist in res.json()['items']:
+            output.append({'name': playlist['name'], 'id': playlist['id']})
+        return output
 
 
 
@@ -142,19 +163,12 @@ spotify = Spotify()
 app = bottle.Bottle()
 @app.route('/')
 def index():
-    return '''
-        <head><title>Shop Radio</title></head>
-        <body>
-        <h1>Shop Radio - Alpha</h1>
-        <br>
-        <form action="/search" method="post">
-            Search: <input name="search_item" type="text" />
-            <input value="Search" type="submit" />
-        </form>
-        </body>
-    '''
+    return bottle.template('index',recent=spotify.recent)
     
-    
+@app.route('/images/<filename:re:.*\.jpg>')
+def send_image(filename):
+    print os.path.dirname(os.path.realpath(__file__))+'\images'
+    return bottle.static_file(filename, root=os.path.dirname(os.path.realpath(__file__))+'\images')
 
 @app.post('/search')
 def search():
@@ -175,17 +189,25 @@ def albums():
 
 @app.route('/add')
 def add_song():
-    spotify.add_song(bottle.request.query['id'])
-    return 'song added'
+    track_id = bottle.request.query['id']
+    spotify.add_song(track_id)
+    spotify.get_recent_track(track_id)
+    return bottle.template('song_added',song=spotify.recent[-1],host=spotify.host)
 
 
 @app.route('/spotify_auth')
 def spotify_auth():
     code = bottle.request.query['code']
     spotify.create_token(code)
-    return 'ok'
+    return bottle.template('playlist',playlists=spotify.list_playlists())
+
+@app.route('/select_playlist')
+def select_playlist():
+    spotify.playlist = bottle.request.query['id']
+    bottle.redirect("/")
+
 
     
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',port=8000)
+    app.run(host='0.0.0.0',port=80)
