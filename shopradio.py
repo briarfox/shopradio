@@ -3,6 +3,7 @@ import grooveshark
 import subprocess
 import threading
 import datetime
+import json
 from dateutil.relativedelta import relativedelta
 import os,sys
 class GS_Radio(object):
@@ -33,16 +34,36 @@ class GS_Radio(object):
     def add_song(self,song_id,user):
         song = self.client.get_song_by_id(song_id)
         song.submitter = user
+        song.rank = 0
         self.playlist.append(song)
-        
+        self.playlist.sort(key=lambda song: song.rank, reverse=True)
+
+    def rank_song(self,song_id,vote):
+        for song in self.playlist:
+            if song.id == song_id:
+                print 'found'
+                if vote == 'up':
+                    song.rank += 1
+                elif vote == 'down':
+                    song.rank -= 1
+                self.playlist.sort(key=lambda song: song.rank, reverse=True)  
+                break   
         
 gs_radio = GS_Radio()
 gs_radio.play()
 app = bottle.Bottle()
+
+def add_voted(song_id):
+    votes = json.loads(bottle.request.get_cookie('votes') or u'{"votes": []}')
+    votes['votes'].append(song_id)
+    bottle.response.set_cookie("votes",json.dumps(votes),max_age = 60*60)
+
 @app.route('/')
 def index():
+
     if bottle.request.get_cookie('user'):
-        return bottle.template('index',playing=gs_radio.playing,playlist=gs_radio.playlist)
+        votes = bottle.request.get_cookie('votes') or u'{"votes": []}'
+        return bottle.template('index',playing=gs_radio.playing,playlist=gs_radio.playlist, votes=json.loads(votes))
     else:
         return bottle.template('new_user')
     
@@ -59,15 +80,24 @@ def search():
 
 @app.get('/add')
 def add_song():
-     song_id = bottle.request.query.get('song_id')
-     gs_radio.add_song(song_id,bottle.request.get_cookie('user')
-)
-     bottle.redirect("/")
+    song_id = bottle.request.query.get('song_id')
+    add_voted(song_id)
+    gs_radio.add_song(song_id,bottle.request.get_cookie('user'))
+    bottle.redirect("/")
 
 @app.post('/new_user')
 def add_user():
     bottle.response.set_cookie("user", bottle.request.forms.get('username'),expires = datetime.datetime.now()+relativedelta(years=1))
     bottle.redirect("/")
+
+@app.get('/rank')
+def rank():
+    song_id = bottle.request.query.id
+    vote = bottle.request.query.vote
+    add_voted(song_id)
+    gs_radio.rank_song(song_id,vote)
+    bottle.redirect('/')
+
      
 
     
