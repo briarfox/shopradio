@@ -4,6 +4,7 @@ import subprocess
 import threading
 import datetime
 import json
+import time
 from dateutil.relativedelta import relativedelta
 import os,sys
 class GS_Radio(object):
@@ -20,12 +21,16 @@ class GS_Radio(object):
 
     def play_thread(self):
         playing = False
+        start_time = datetime.datetime.now() - relativedelta(seconds=31)
         while True:
             if self.playlist:
                 song = self.playlist.pop(0)
                 self.playing = song
                 subprocess.call(['vlc','-I','dummy','--one-instance','--play-and-exit', song.stream.url])
                 self.playing = False
+            elif start_time + relativedelta(seconds=30) <= datetime.datetime.now():
+                subprocess.call(['vlc','-I','dummy','--one-instance','--play-and-exit', '/data/checklist.wav'])
+                start_time = datetime.datetime.now()
             
     def play(self):
         t1 = threading.Thread(target=self.play_thread)
