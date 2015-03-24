@@ -26,7 +26,7 @@ class GS_Radio(object):
             if self.playlist:
                 song = self.playlist.pop(0)
                 self.playing = song
-                subprocess.call(['vlc','-I','dummy','--one-instance','--play-and-exit', song.stream.url])
+                subprocess.call(['vlc','-I','dummy','--one-instance','--play-and-exit','--audio-filter','normalizer',song.stream.url])
                 self.playing = False
             elif start_time + relativedelta(seconds=30) <= datetime.datetime.now():
                 subprocess.call(['vlc','-I','dummy','--one-instance','--play-and-exit', '/data/checklist.wav'])
@@ -107,4 +107,7 @@ def rank():
 
     
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',port=80)
+    from ConfigParser import SafeConfigParser
+    parser = SafeConfigParser()
+    parser.read('settings.config')
+    app.run(host=parser.get('server','ip'),port=parser.get('server','port'))
