@@ -74,8 +74,8 @@ def index():
     
 @app.route('/images/<filename:re:.*\.jpg>')
 def send_image(filename):
-    print os.path.dirname(os.path.realpath(__file__))+'\images'
-    return bottle.static_file(filename, root=os.path.dirname(os.path.realpath(__file__))+'\images')
+    print os.path.dirname(os.path.realpath(__file__))+'/images'
+    return bottle.static_file(filename, root=os.path.dirname(os.path.realpath(__file__))+'/images')
 
 @app.post('/search')
 def search():
