@@ -29,7 +29,7 @@ class GS_Radio(object):
                 subprocess.call(['vlc','-I','dummy','--one-instance','--play-and-exit','--audio-filter','normalizer',song.stream.url])
                 self.playing = False
             elif start_time + relativedelta(seconds=30) <= datetime.datetime.now():
-                subprocess.call(['vlc','-I','dummy','--one-instance','--play-and-exit', '/data/checklist.wav'])
+                subprocess.call(['vlc','-I','dummy','--one-instance','--play-and-exit', 'data/checklist.wav'])
                 start_time = datetime.datetime.now()
             
     def play(self):
