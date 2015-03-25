@@ -107,7 +107,4 @@ def rank():
 
     
 if __name__ == '__main__':
-    from ConfigParser import SafeConfigParser
-    parser = SafeConfigParser()
-    parser.read('settings.config')
-    app.run(host=parser.get('server','ip'),port=parser.get('server','port'))
+    app.run(host=sys.argv[1],port=sys.argv[2])
