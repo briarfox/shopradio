@@ -5,6 +5,7 @@ import threading
 import datetime
 import json
 import time
+import random
 from dateutil.relativedelta import relativedelta
 import os,sys
 class GS_Radio(object):
@@ -40,8 +41,9 @@ class GS_Radio(object):
         song = self.client.get_song_by_id(song_id)
         song.submitter = user
         song.rank = 0
+        song.random = random.randint(0,3)
         self.playlist.append(song)
-        self.playlist.sort(key=lambda song: song.rank, reverse=True)
+        self.playlist.sort(key=lambda song: song.rank+song.random, reverse=True)
 
     def rank_song(self,song_id,vote):
         for song in self.playlist:
@@ -51,7 +53,7 @@ class GS_Radio(object):
                     song.rank += 1
                 elif vote == 'down':
                     song.rank -= 1
-                self.playlist.sort(key=lambda song: song.rank, reverse=True)  
+                self.playlist.sort(key=lambda song: song.rank + song.random, reverse=True)  
                 break   
         
 gs_radio = GS_Radio()
