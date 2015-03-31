@@ -24,8 +24,25 @@ class GS_Radio(object):
         playing = False
         start_time = datetime.datetime.now() - relativedelta(seconds=31)
         while True:
+            
             if self.playlist:
-                song = self.playlist.pop(0)
+                print 'RUNNING PLAYLIST CHECK'
+                self.playlist.sort(key=lambda song: song.rank, reverse=True)
+                song_rank = self.playlist[0].rank
+                tracks = []
+                
+                for song_num in range(len(self.playlist)):
+                    if self.playlist[song_num].rank == song_rank:
+                        tracks.append(song_num)
+                
+                if len(tracks)>1:
+                    print 'tracks greater then 1'
+                    track_id = tracks[random.randint(0,len(tracks)-1)]
+                else:
+                    track_id = tracks[0]
+                
+                
+                song = self.playlist.pop(track_id)
                 self.playing = song
                 subprocess.call(['vlc','-I','dummy','--one-instance','--play-and-exit','--audio-filter','normalizer',song.stream.url])
                 self.playing = False
@@ -41,9 +58,9 @@ class GS_Radio(object):
         song = self.client.get_song_by_id(song_id)
         song.submitter = user
         song.rank = 0
-        song.random = random.randint(0,3)
+        #song.random = random.randint(0,3)
         self.playlist.append(song)
-        self.playlist.sort(key=lambda song: song.rank+song.random, reverse=True)
+        self.playlist.sort(key=lambda song: song.rank, reverse=True)
 
     def rank_song(self,song_id,vote):
         for song in self.playlist:
@@ -53,7 +70,7 @@ class GS_Radio(object):
                     song.rank += 1
                 elif vote == 'down':
                     song.rank -= 1
-                self.playlist.sort(key=lambda song: song.rank + song.random, reverse=True)  
+                self.playlist.sort(key=lambda song: song.rank, reverse=True)  
                 break   
         
 gs_radio = GS_Radio()
