@@ -104,9 +104,12 @@ def search():
 
 @app.get('/add')
 def add_song():
-    song_id = bottle.request.query.get('song_id')
-    add_voted(song_id)
-    gs_radio.add_song(song_id,bottle.request.get_cookie('user'))
+    try:
+        song_id = bottle.request.query.get('song_id')
+        add_voted(song_id)
+        gs_radio.add_song(song_id,bottle.request.get_cookie('user'))
+    except:
+        pass
     bottle.redirect("/")
 
 @app.post('/new_user')
