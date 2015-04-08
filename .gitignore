@@ -1,4 +1,4 @@
 *.conf
 *.pyc
-*.ini
+*.log
 *.cfg
